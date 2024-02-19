@@ -1,0 +1,372 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+plot(cars)
+```
+```{r}
+library(ggplot2)
+library(tidyverse)
+library(readr)
+```
+```{r}
+
+```
+
+
+```{r}
+```
+
+
+```{r}
+summary(logModel1)
+```
+```{r}
+predict(logModel1, interval = "prediction", level = .95, newdata = data.frame(OverallQual = 5))
+exp(11.76458)
+exp(11.31255)
+exp(12.21662)
+```
+
+```{r}
+summary(top10ModelSquared)
+```
+
+
+```{r}
+library(ClusterR)
+library(cluster)
+library(dplyr)
+```
+
+```{r}
+Neighborhoods <- c(unique(House$Neighborhood))
+df <- data.frame(Neighborhoods)
+df
+```
+```{r}
+Years <- c(unique(House$YearBuilt))
+df1 <- data.frame(Years)
+df1 %>%
+  arrange(Years)
+```
+
+
+```{r}
+meanNeighborhood <- House %>%
+  group_by(Neighborhood) %>%
+  summarise_at(vars(SalePrice), list(MeanSalePrice = mean))
+meanNeighborhood
+```
+
+
+```{r}
+meanYears <- House %>%
+  group_by(YearBuilt) %>%
+  summarise_at(vars(SalePrice), list(MeanSalePrice = mean))
+meanYears
+```
+
+
+```{r}
+meanNeighborhood1 <- meanNeighborhood %>%
+  column_to_rownames(., var = "Neighborhood")
+meanNeighborhood1
+```
+
+
+```{r}
+meanYears1 <- meanYears %>%
+  column_to_rownames(., var = "YearBuilt")
+meanYears1
+```
+
+
+```{r}
+set.seed(123)
+wssN <- sapply(1:k.max,
+               function(k) {kmeans(meanNeighborhood1, k, nstart = 50, iter.max = 15)$tot.withinss})
+wssN
+```
+```{r}
+plot(1:k.max, wssN,
+     type = "b", pch = 19, frame = FALSE,
+     xlab = "Number of Clusters K",
+     ylab = "Total within-clusters sum of squares")
+```
+
+
+```{r}
+kmeansCluster <- kmeans(meanNeighborhood1, centers = 3, nstart = 50, iter.max = 15)
+kmeansCluster
+```
+
+
+```{r}
+newHouse$YearBuilt <- as.character(newHouse$YearBuilt)
+```
+
+
+```{r}
+set.seed(123)
+k.max <- 15
+wssY <- sapply(1:k.max,
+               function(k) {kmeans(meanYears1, k, nstart = 50, iter.max = 15)$tot.withinss})
+wssY
+```
+
+
+```{r}
+plot(1:k.max, wssY,
+     type = "b", pch = 19, frame = FALSE,
+     xlab = "Number of Clusters K",
+     ylab = "Total within-clusters sum of squares")
+```
+
+
+```{r}
+kmeansClusterY <- kmeans(meanYears1, centers = 4, nstart = 50, iter.max = 15)
+kmeansClusterY
+```
+
+
+```{r}
+clusterNeighborhood <- data.frame(meanNeighborhood)
+clusterNeighborhood$Cluster <- kmeansCluster$cluster
+clusterNeighborhood
+```
+```{r}
+clusterYears <- data.frame(meanYears)
+clusterYears$Cluster <- kmeansClusterY$cluster
+clusterYears
+```
+
+
+```{r}
+clusterMeans <- clusterNeighborhood %>%
+  group_by(Cluster) %>%
+  summarise_at(vars(MeanSalePrice), list(ClusterMean = mean))
+clusterMeans
+```
+
+```{r}
+clusterMeansY <- clusterYears %>%
+  group_by(Cluster) %>%
+  summarise_at(vars(MeanSalePrice), list(ClusterMean = mean))
+clusterMeansY
+```
+
+
+```{r}
+qplot(OverallQual, SalePrice, data= House)
+```
+```{r}
+newHouse <- data.frame(House)
+HouseFinal <- data.frame(newHouse)
+newHouse$logGrLivArea <- NA
+```
+
+
+```{r}
+newHouse$ClusterN <- NA
+```
+
+
+```{r}
+newHouse$ClusterY <- NA
+```
+
+
+```{r}
+for(n in newHouse$Neighborhood){
+  for(n2 in clusterNeighborhood$Neighborhood){
+    if(n == n2) newHouse[newHouse$Neighborhood == n, "ClusterN"] <-   clusterNeighborhood[clusterNeighborhood$Neighborhood == n2, "Cluster"]
+  }
+}
+```
+```{r}
+select(newHouse, SalePrice, Neighborhood, ClusterN)
+```
+
+
+```{r}
+for(y in newHouse$YearBuilt){
+  for(y2 in clusterYears$YearBuilt){
+    if(y == y2) newHouse[newHouse$YearBuilt == y, "ClusterY"] <- clusterYears[clusterYears$YearBuilt == y2, "Cluster"]
+  }
+}
+```
+
+
+```{r}
+select(newHouse, SalePrice, Neighborhood, ClusterN, ClusterY)
+```
+
+
+```{r}
+summary(m1)
+summary(logModel1)
+```
+
+
+```{r}
+summary(lm(logSalePrice ~ OverallQual + Neighborhood, data = newHouse))
+summary(lm(logSalePrice ~ OverallQual + ClusterN, data = newHouse))
+```
+```{r}
+newHouse$logGrLivArea <- log(newHouse$GrLivArea)
+```
+
+
+```{r}
+newHouse$AreaPerRoom <- newHouse$GrLivArea / newHouse$TotRmsAbvGrd
+```
+
+
+```{r}
+newHouse$ClusterN <- as.character(newHouse$ClusterN)
+newHouse$ClusterY <- as.character(newHouse$ClusterY)
+```
+```{r}
+sapply(newHouse, class)
+```
+
+
+```{r}
+ggplot(newHouse, aes(x = OverallQual, y = SalePrice)) + geom_point(color = newHouse$ClusterN)
+```
+```{r}
+ggplot(newHouse, aes(x = OverallQual, y = SalePrice, color = ClusterN)) + geom_point() + geom_smooth(method = lm)
+```
+
+
+```{r}
+ggplot(newHouse, aes(x = TotRmsAbvGrd, y = GrLivArea, color = SalePrice > 200000)) + geom_point() + geom_smooth(method = lm)
+```
+
+
+```{r}
+FINAL <- lm(logSalePrice ~  I(OverallQual^2) + OverallQual + ClusterN + OverallQual:ClusterN + logGrLivArea, data = newHouse)
+summary(FINAL)
+```
+
+```{r}
+improve <- lm(logSalePrice ~ I(OverallQual^2) + OverallQual + ClusterN + OverallQual:ClusterN + logGrLivArea + GarageCars, data = newHouse)
+summary(improve)
+```
+
+```{r}
+predict(improve, newdata = data.frame(OverallQual = 8, ClusterN = "1", logGrLivArea = log(2198), GarageCars = 3))
+predict(improve, newdata = data.frame(OverallQual = 8, ClusterN = "2", logGrLivArea = log(2198), GarageCars = 3))
+predict(improve, newdata = data.frame(OverallQual = 8, ClusterN = "3", logGrLivArea = log(2198), GarageCars = 3))
+exp(12.68357)
+exp(12.5559)
+exp(12.35813)
+```
+
+
+```{r}
+12.68357 - 12.5559
+12.5559 - 12.35813
+12.68357 - 12.35813
+```
+
+
+```{r}
+predict(improve, newdata = data.frame(OverallQual = 5, ClusterN = "1", logGrLivArea = log(1568), GarageCars = 2))
+predict(improve, newdata = data.frame(OverallQual = 5, ClusterN = "2", logGrLivArea = log(1568), GarageCars = 2))
+predict(improve, newdata = data.frame(OverallQual = 5, ClusterN = "3", logGrLivArea = log(1568), GarageCars = 2))
+```
+
+
+```{r}
+summary(lm(logSalePrice ~ I(OverallQual^2) + OverallQual + ClusterN + logGrLivArea + GarageCars, data = newHouse))
+```
+
+
+```{r}
+predict(improve, newdata = data.frame(newHouse[1:2, ]))
+```
+
+
+```{r}
+newHouse %>%
+  group_by(ClusterN) %>%
+  summarise_at(vars(SalePrice), list(ClusterMean = mean))
+```
+
+
+```{r}
+summary(lm(logSalePrice ~  I(OverallQual^2) + OverallQual + ClusterN + OverallQual:ClusterN + logGrLivArea + KitchenQual, data = newHouse))
+```
+
+
+```{r}
+unique(newHouse$Neighborhood)
+```
+
+
+```{r}
+clusterNeighborhood %>%
+  arrange(Cluster)
+```
+
+
+```{r}
+ggplot(newHouse, aes(x = KitchenQual, y = SalePrice)) + geom_boxplot()
+```
+
+
+```{r}
+ggplot(newHouse, aes(x = KitchenQual, y = OverallQual)) + geom_boxplot()
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+lm(logSalePrice ~  I(OverallQual^2) + OverallQual + ClusterN + OverallQual:ClusterN + logGrLivArea, data = newHouse)
+```
+
+
+```{r}
+summary(top10Model)
+```
+
+```{r}
+ggplot(newHouse, aes(x = GrLivArea, y = SalePrice)) + geom_point() + geom_smooth(method = lm)
+```
+
+
+```{r}
+ggplot(newHouse, aes(x = logGrLivArea, y = logSalePrice)) + geom_point() + geom_smooth(method = lm)
+```
+```{r}
+ggplot(newHouse, aes(x = OverallQual, y = logSalePrice)) + geom_point() + geom_smooth(method = lm)
+```
+
+
+```{r}
+summary(lm(logSalePrice ~ log(GrLivArea), data = newHouse))
+```
+```{r}
+summary(lm(logSalePrice ~ GrLivArea, data = newHouse))
+```
+```{r}
+summary(lm(logSalePrice ~ GrLivArea, data = newHouse))
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
